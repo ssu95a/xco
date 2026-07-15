@@ -1,8 +1,6 @@
 package io.github.plainj.xco;
 
 import org.w3c.dom.*;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -17,7 +15,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.*;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Consumer;
@@ -28,19 +25,18 @@ import static org.w3c.dom.Node.*;
 
 public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Object> {
 
-    final private static String Log_Prfx = "[XML] ";
+    final private static String Log_Prfx = "[XCO] ";
 
     private static final String USER_DATA_KEY = "plainj.xco";
 
     private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY;
 
     static {
-
         try {
             DOCUMENT_BUILDER_FACTORY = createDocumentBuilderFactory();
         }
         catch( ParserConfigurationException ex ) {
-            throw new ExceptionInInitializerError( "Failed to initialize secure XML parser: " + ex.getMessage() );
+               throw new ExceptionInInitializerError( "Failed to initialize secure XML parser: " + ex.getMessage() );
         }
     }
 
@@ -91,7 +87,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     }
 
     /** */
-    public Xco e(String name, Object value)
+    public Xco e( String name, Object value)
     {
         Xco child = e(name);
         child.set(value);
@@ -146,7 +142,6 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     /** */
     public boolean hasElement( String name )
     {
-
         if( isAttribute() || isNullOrEmpty(name) )
             return false;
 
@@ -674,67 +669,6 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         return XPathFactory.newInstance().newXPath();
     }
 
-    private static DocumentBuilder documentBuilder() {
-
-        try {
-            return DOCUMENT_BUILDER_FACTORY.newDocumentBuilder();
-        }
-        catch( Throwable th ) {
-            throw new XcoException("Error on create DocumentBuilder", th);
-        }
-    }
-
-    private static DocumentBuilderFactory createDocumentBuilderFactory() throws ParserConfigurationException {
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-
-        factory.setXIncludeAware(false);
-        factory.setExpandEntityReferences(false);
-
-        try {
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-        }
-        catch( IllegalArgumentException ignored ) {
-        }
-
-        factory.setNamespaceAware(false);
-        factory.setValidating(false);
-        factory.setIgnoringComments(true);
-
-        return factory;
-    }
-
-    private static TransformerFactory transformerFactory() {
-
-        TransformerFactory factory = TransformerFactory.newInstance();
-
-        try {
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        }
-        catch( Exception ignored ) {
-        }
-
-        try {
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-        }
-        catch( Exception ignored ) {
-        }
-
-        try {
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
-        }
-        catch( Exception ignored ) {
-        }
-
-        return factory;
-    }
 
     public static Xco of( String rootName )
     {
@@ -747,72 +681,17 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         return wrap(root);
     }
 
-    public static Xco parseXml(String xml) {
-
-        Objects.requireNonNull(xml, "'xml' is null");
-
-        return parseXml(new StringReader(xml));
+    public static Xco parseXml(Object source) {
+        return parseXml(source, null);
     }
 
-    public static Xco parseXml(Reader reader) {
-
-        Objects.requireNonNull(reader, "'reader' is null");
-
-        try {
-            return parseXml(new InputSource(reader));
-        }
-        catch( Throwable th ) {
-            throw new XcoException("Error on parse XML from Reader", th);
-        }
+    public static Xco parseXml(Object source, Charset charset) {
+        return wrap(XmlSupport.read(source, charset));
     }
-
-    public static Xco parseXml(InputStream stream) {
-
-        Objects.requireNonNull(stream, "'stream' is null");
-
-        try {
-            return parseXml(new InputSource(stream));
-        }
-        catch( Throwable th ) {
-            throw new XcoException("Error on parse XML from InputStream", th);
-        }
-    }
-
-    public static Xco parseXml(File file) {
-
-        Objects.requireNonNull(file, "'file' is null");
-
-        try( InputStream is = new FileInputStream(file) ) {
-            return parseXml(is);
-        }
-        catch( Throwable th ) {
-            throw new XcoException("Error on parse XML from file: " + file, th);
-        }
-    }
-
-    public static Xco parseXml(URL url) {
-
-        Objects.requireNonNull(url, "'url' is null");
-
-        try( InputStream is = url.openStream() ) {
-            return parseXml(is);
-        }
-        catch( Throwable th ) {
-            throw new XcoException("Error on parse XML from url: " + url, th);
-        }
-    }
-
-    private static Xco parseXml(InputSource source) throws IOException, SAXException {
-
-        Document document = documentBuilder().parse(source);
-
-        if( document == null || document.getDocumentElement() == null )
-            throw new XcoException("Parsed XML document is empty");
-
-        document.normalize();
-        removeBlankTextNodes(document.getDocumentElement());
-
-        return wrap(document.getDocumentElement());
+    public String toXml() {
+        StringWriter writer = new StringWriter();
+        writeXml(writer);
+        return writer.toString();
     }
 
 
