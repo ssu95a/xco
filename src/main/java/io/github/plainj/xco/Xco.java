@@ -2,15 +2,6 @@ package io.github.plainj.xco;
 
 import org.w3c.dom.*;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
@@ -29,16 +20,6 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
     private static final String USER_DATA_KEY = "plainj.xco";
 
-    private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY;
-
-    static {
-        try {
-            DOCUMENT_BUILDER_FACTORY = createDocumentBuilderFactory();
-        }
-        catch( ParserConfigurationException ex ) {
-               throw new ExceptionInInitializerError( "Failed to initialize secure XML parser: " + ex.getMessage() );
-        }
-    }
 
     private final Element element;
     private final Attr    attr;
@@ -440,55 +421,27 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         return this;
     }
 
-    /** */
-    public String toXml() {
-
-        StringWriter writer = new StringWriter();
-        writeXml(writer, null, false);
-        return writer.toString();
+    public void writeXml(Object target) {
+        writeXml(target, null, false);
     }
 
-    /** */
-    public void writeXml(Writer writer) {
-        writeXml(writer, null, false);
+    public void writeXml(Object target, Charset charset) {
+        writeXml(target, charset, false);
     }
 
-    public void writeXml(OutputStream stream) {
-        writeXml(stream, null, false);
+    public void writeXml(Object target, Charset charset, boolean declaration) {
+        XmlSupport.write(node(), target, charset, declaration);
     }
 
-    public void writeXml(Writer writer, Charset charset, boolean declaration) {
-
-        Objects.requireNonNull(writer, "'writer' is null");
-
-        writeXml(new StreamResult(writer), charset, declaration);
-    }
-
-    public void writeXml(OutputStream stream, Charset charset, boolean declaration) {
-
-        Objects.requireNonNull(stream, "'stream' is null");
-
-        writeXml(new StreamResult(stream), charset, declaration);
-    }
-
-    private void writeXml(StreamResult result, Charset charset, boolean declaration) {
-
+    Node node() {
         ensureElement();
+        return element;
+    }
 
-        try {
-            Transformer transformer = transformerFactory().newTransformer();
-
-            if( !declaration )
-                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-
-            if( charset != null )
-                transformer.setOutputProperty(OutputKeys.ENCODING, charset.name());
-
-            transformer.transform(new DOMSource(element), result);
-        }
-        catch( Throwable th ) {
-            throw new XcoException("Error on write XML", th);
-        }
+    public String toXml() {
+        StringWriter writer = new StringWriter();
+        writeXml(writer);
+        return writer.toString();
     }
 
     @Override
@@ -672,9 +625,9 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
     public static Xco of( String rootName )
     {
-        validateName(rootName, "'rootName' is empty");
+        validateName( rootName, "'rootName' is empty" );
 
-        Document document = documentBuilder().newDocument();
+        Document document = XmlSupport.newDocument();
         Element root = document.createElement(rootName);
         document.appendChild(root);
 
@@ -688,11 +641,5 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     public static Xco parseXml(Object source, Charset charset) {
         return wrap(XmlSupport.read(source, charset));
     }
-    public String toXml() {
-        StringWriter writer = new StringWriter();
-        writeXml(writer);
-        return writer.toString();
-    }
-
 
 }

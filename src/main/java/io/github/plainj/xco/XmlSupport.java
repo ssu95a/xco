@@ -130,11 +130,10 @@ final class XmlSupport {
         return factory;
     }
 
+    /** */
     static Element read(Object source, Charset charset) {
 
         Objects.requireNonNull(source, "'source' is null");
-
-        Charset effectiveCharset = charset == null ? DEFAULT_CHARSET : charset;
 
         try {
 
@@ -142,27 +141,27 @@ final class XmlSupport {
                 return read(new InputSource(new StringReader(source.toString())));
 
             if( source instanceof Reader )
-                return read(readerInputSource((Reader)source, effectiveCharset));
+                return read(readerInputSource((Reader)source, charset));
 
             if( source instanceof InputStream )
-                return read(streamInputSource((InputStream)source, effectiveCharset));
+                return read(streamInputSource((InputStream)source, charset));
 
             if( source instanceof File )
-                return read((File)source, effectiveCharset);
+                return read((File)source, charset);
 
             if( source instanceof Path )
-                return read((Path)source, effectiveCharset);
+                return read((Path)source, charset);
 
             if( source instanceof URL )
-                return read((URL)source, effectiveCharset);
+                return read((URL)source, charset);
 
-            throw new XcoException("Unsupported XML source type: " + source.getClass().getName());
+            throw new XcoException( Log_Prfx + "Unsupported XML source type: " + source.getClass().getName() );
         }
         catch( XcoException ex ) {
             throw ex;
         }
         catch( Throwable th ) {
-            throw new XcoException("Error on read XML from " + source, th);
+            throw new XcoException( Log_Prfx + "Error on read XML from " + source, th );
         }
     }
 
@@ -246,6 +245,12 @@ final class XmlSupport {
         catch( Throwable th ) {
             throw new XcoException("Error on create DocumentBuilder", th);
         }
+    }
+
+    /** */
+    static Document newDocument() {
+
+        return documentBuilder().newDocument();
     }
 
     private static DocumentBuilderFactory createDocumentBuilderFactory() throws ParserConfigurationException {
