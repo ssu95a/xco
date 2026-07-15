@@ -25,4 +25,10 @@ final class S {
 
         return true;
     }
+
+    /** */
+    static String toString( Object value )
+    {
+        return value == null ? null : String.valueOf(value);
+    }
 }

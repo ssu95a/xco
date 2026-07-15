@@ -2,9 +2,6 @@ package io.github.plainj.xco;
 
 import org.w3c.dom.*;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -123,7 +120,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     /** */
     public boolean hasElement( String name )
     {
-        if( isAttribute() || isNullOrEmpty(name) )
+        if( isAttribute() || S.isNullOrEmpty(name) )
             return false;
 
         return firstDirectChild(name) != null;
@@ -132,7 +129,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     /** */
     public boolean hasAttribute( String name )
     {
-        if( isAttribute() || isNullOrEmpty(name) )
+        if( isAttribute() || S.isNullOrEmpty(name) )
             return false;
 
         return element.hasAttribute(name);
@@ -179,13 +176,13 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     {
 
         if( isAttribute() ) {
-            attr.setValue( toStringValue(value) );
+            attr.setValue( S.toString(value) );
             return this;
         }
 
         clearTextNodes(element);
 
-        String text = toStringValue(value);
+        String text = S.toString(value);
 
         if( text != null )
             element.appendChild(element.getOwnerDocument().createTextNode(text));
@@ -202,7 +199,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
     public Object getIfPresent(String name) {
 
-        if( isNullOrEmpty(name) )
+        if( S.isNullOrEmpty(name) )
             return null;
 
         if( name.charAt(0) == '@' ) {
@@ -224,7 +221,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     /** */
     public boolean setIfPresent( String name, Object value )
     {
-        if( isAttribute() || isNullOrEmpty(name) )
+        if( isAttribute() || S.isNullOrEmpty(name) )
             return false;
 
         if( name.charAt(0) == '@' ) {
@@ -234,7 +231,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
             if( attribute == null )
                 return false;
 
-            attribute.setValue( toStringValue(value) );
+            attribute.setValue( S.toString(value) );
             return true;
         }
 
@@ -273,66 +270,33 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         if( isAttribute() )
             return Optional.empty();
 
-        if( isNullOrEmpty(xpathQuery) )
-            return Optional.empty();
+        Node node = XPathSupport.single(element, xpathQuery);
+        Xco xco = wrapNode(node);
 
-        try {
-
-            Node node = (Node)newXPath().evaluate( xpathQuery, element, XPathConstants.NODE );
-
-            if( node == null )
-                return Optional.empty();
-
-            switch( node.getNodeType() ) {
-                case ELEMENT_NODE:
-                    return Optional.of(wrap((Element)node));
-                case ATTRIBUTE_NODE:
-                    return Optional.of(new Xco((Attr)node));
-                case TEXT_NODE:
-                case CDATA_SECTION_NODE:
-                    return node.getParentNode() instanceof Element
-                            ? Optional.of(wrap((Element)node.getParentNode()))
-                            : Optional.empty();
-
-                default:
-                    return Optional.empty();
-            }
-        }
-        catch( Throwable th ) {
-            throw new XcoException( Log_Prfx + "Error on execute XPath: " + xpathQuery, th );
-        }
+        return xco == null ? Optional.<Xco>empty() : Optional.of(xco);
     }
 
     public Iterable<Xco> select(String xpathQuery) {
 
         ensureElement();
 
-        if( isNullOrEmpty(xpathQuery) )
+        List<Node> nodes = XPathSupport.select(element, xpathQuery);
+
+        if( nodes.isEmpty() )
             return Collections.emptyList();
 
-        try {
-            NodeList nodes = (NodeList)newXPath().evaluate(xpathQuery, element, XPathConstants.NODESET);
+        List<Xco> result = new ArrayList<Xco>(nodes.size());
 
-            if( nodes == null || nodes.getLength() == 0 )
-                return Collections.emptyList();
+        for( Node node : nodes ) {
+            Xco xco = wrapNode(node);
 
-            List<Xco> result = new ArrayList<Xco>(nodes.getLength());
-
-            for( int i = 0; i < nodes.getLength(); i++ ) {
-                Node node = nodes.item(i);
-
-                if( node instanceof Element )
-                    result.add(wrap((Element)node));
-                else if( node instanceof Attr )
-                    result.add(new Xco((Attr)node));
-            }
-
-            return result;
+            if( xco != null )
+                result.add(xco);
         }
-        catch( Throwable th ) {
-            throw new XcoException("Error on execute XPath: " + xpathQuery, th);
-        }
+
+        return result;
     }
+
 
     public <T> Iterable<T> select(String xpathQuery, Function<Xco, T> mapper) {
 
@@ -350,21 +314,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
         ensureElement();
 
-        if( isNullOrEmpty(xpathQuery) )
-            return 0;
-
-        String query = xpathQuery.trim();
-
-        if( !query.startsWith("count") )
-            query = "count(" + query + ")";
-
-        try {
-            Double number = (Double)newXPath().evaluate(query, element, XPathConstants.NUMBER);
-            return number.intValue();
-        }
-        catch( Throwable th ) {
-            throw new XcoException("Error on execute XPath count: " + xpathQuery, th);
-        }
+        return XPathSupport.count(element, xpathQuery);
     }
 
     public Xco remove() {
@@ -575,51 +525,11 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         }
     }
 
-    private static void removeBlankTextNodes(Node node) {
-
-        for( Node child = node.getFirstChild(); child != null; ) {
-
-            Node next = child.getNextSibling();
-
-            if( child.getNodeType() == TEXT_NODE && isBlank(child.getNodeValue()) )
-                node.removeChild(child);
-            else if( child.getNodeType() == ELEMENT_NODE )
-                removeBlankTextNodes(child);
-
-            child = next;
-        }
-    }
-
-    private static boolean isBlank( CharSequence value )
-    {
-        if( value == null )
-            return true;
-
-        for( int i = 0; i < value.length(); i++ )
-        {
-            if( !Character.isWhitespace(value.charAt(i)) )
-                return false;
-        }
-
-        return true;
-    }
-
-    private static boolean isNullOrEmpty(String value) {
-        return value == null || value.isEmpty();
-    }
-
+    /** */
     private static void validateName( String name, String message )
     {
-        if( isNullOrEmpty(name) )
+        if( S.isNullOrEmpty(name) )
             throw new IllegalArgumentException(message);
-    }
-
-    private static String toStringValue(Object value) {
-        return value == null ? null : String.valueOf(value);
-    }
-
-    private static XPath newXPath() {
-        return XPathFactory.newInstance().newXPath();
     }
 
 
@@ -642,4 +552,21 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         return wrap(XmlSupport.read(source, charset));
     }
 
+    private static Xco wrapNode(Node node) {
+
+        if( node == null )
+            return null;
+
+        switch( node.getNodeType() ) {
+            case ELEMENT_NODE:
+                return wrap((Element)node);
+            case ATTRIBUTE_NODE:
+                return new Xco((Attr)node);
+            case TEXT_NODE:
+            case CDATA_SECTION_NODE:
+                return node.getParentNode() instanceof Element ? wrap((Element)node.getParentNode()) : null;
+            default:
+                return null;
+        }
+    }
 }
