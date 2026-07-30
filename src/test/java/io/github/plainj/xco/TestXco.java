@@ -56,4 +56,16 @@ public class TestXco {
         assertEquals("name", name.get().name());
         assertEquals("Sergey", name.get().get());
     }
+
+    @Test
+    public void shouldNotCorruptRootWhenXPathSelectsCurrentNode() {
+
+        Xco xco = Xco.parseXml("<root>value<item/></root>");
+
+        assertEquals(0, xco.remove("."));
+
+        assertEquals("root", xco.name());
+        assertEquals("value", xco.get());
+        assertEquals(1, xco.count("item"));
+    }
 }

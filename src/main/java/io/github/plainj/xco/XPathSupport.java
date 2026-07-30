@@ -14,7 +14,6 @@ import java.util.Objects;
 /** */
 final class XPathSupport {
 
-    final private static String Log_Prfx = "[XPath] ";
 
     private XPathSupport() {
     }
@@ -31,7 +30,7 @@ final class XPathSupport {
             return (Node)newXPath().evaluate(query, context, XPathConstants.NODE);
         }
         catch( Throwable th ) {
-            throw new XcoException(Log_Prfx + "Error on execute XPath: " + query, th);
+            throw new XcoPathException( "Error on execute XPath: " + query, th);
         }
     }
 
@@ -58,7 +57,7 @@ final class XPathSupport {
             return result;
         }
         catch( Throwable th ) {
-            throw new XcoException(Log_Prfx + "Error on execute XPath: " + query, th);
+            throw new XcoPathException( "Error on execute XPath: " + query, th);
         }
     }
 
@@ -80,7 +79,7 @@ final class XPathSupport {
             return number == null ? 0 : number.intValue();
         }
         catch( Throwable th ) {
-            throw new XcoException(Log_Prfx + "Error on execute XPath count: " + query, th);
+            throw new XcoPathException( "Error on execute XPath count: " + query, th);
         }
     }
 

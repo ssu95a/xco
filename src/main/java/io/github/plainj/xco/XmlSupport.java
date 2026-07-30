@@ -29,8 +29,6 @@ final class XmlSupport {
 
     static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
-    final private static String Log_Prfx = "[XML] ";
-
     private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY;
 
     static {
@@ -74,7 +72,7 @@ final class XmlSupport {
             return;
         }
 
-        throw new XcoException( Log_Prfx + "Unsupported XML target type: " + target.getClass().getName());
+        throw new XcoWriteException( "Unsupported XML target type: " + target.getClass().getName());
     }
 
     private static void write(Node node, Result result, Charset charset, boolean declaration )
@@ -101,7 +99,7 @@ final class XmlSupport {
             transformer.transform( new DOMSource(node), result );
         }
         catch( Throwable th ) {
-            throw new XcoException( Log_Prfx + "Error on write XML", th );
+            throw new XcoWriteException( "Error on write XML", th );
         }
     }
 
@@ -155,13 +153,13 @@ final class XmlSupport {
             if( source instanceof URL )
                 return read((URL)source, charset);
 
-            throw new XcoException( Log_Prfx + "Unsupported XML source type: " + source.getClass().getName() );
+            throw new XcoReadException( "Unsupported XML source type: " + source.getClass().getName() );
         }
-        catch( XcoException ex ) {
+        catch( XcoReadException ex ) {
             throw ex;
         }
         catch( Throwable th ) {
-            throw new XcoException( Log_Prfx + "Error on read XML from " + source, th );
+            throw new XcoReadException( "Error on read XML from " + source, th );
         }
     }
 
@@ -173,7 +171,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw new XcoException("Error on read XML from file: " + file, th);
+            throw new XcoReadException("Error on read XML from file: " + file, th);
         }
     }
 
@@ -185,7 +183,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw new XcoException("Error on read XML from path: " + path, th);
+            throw new XcoReadException("Error on read XML from path: " + path, th);
         }
     }
 
@@ -197,7 +195,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw new XcoException("Error on read XML from url: " + url, th);
+            throw new XcoReadException("Error on read XML from url: " + url, th);
         }
     }
 
@@ -206,7 +204,7 @@ final class XmlSupport {
         org.w3c.dom.Document document = documentBuilder().parse(source);
 
         if( document == null || document.getDocumentElement() == null )
-            throw new XcoException("Parsed XML document is empty");
+            throw new XcoReadException("Parsed XML document is empty");
 
         document.normalize();
 

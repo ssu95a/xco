@@ -1,6 +1,5 @@
 package io.github.plainj.xco;
 
-import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -85,39 +84,6 @@ final class NodeSupport {
                 element.removeChild(child);
 
             child = next;
-        }
-    }
-
-    /** */
-    static boolean remove( Node node )
-    {
-        if( node == null )
-            return false;
-
-        switch( node.getNodeType() ) {
-            case ATTRIBUTE_NODE:
-                Attr attr = (Attr)node;
-                Element owner = attr.getOwnerElement();
-
-                if( owner == null )
-                    return false;
-
-                owner.removeAttributeNode(attr);
-                return true;
-
-            case ELEMENT_NODE:
-            case TEXT_NODE:
-            case CDATA_SECTION_NODE:
-                Node parent = node.getParentNode();
-
-                if( !(parent instanceof Element) )
-                    return false;
-
-                parent.removeChild(node);
-                return true;
-
-            default:
-                return false;
         }
     }
 }

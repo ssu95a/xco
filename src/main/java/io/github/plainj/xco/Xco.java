@@ -326,7 +326,8 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
         Node parent = element.getParentNode();
 
-        if( parent instanceof Element || parent instanceof Document ) {
+        if( parent instanceof Element )
+        {
             element.setUserData(USER_DATA_KEY, null, null);
             parent.removeChild(element);
             value = null;
@@ -507,16 +508,14 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
         List<Node> nodes = XPathSupport.select( element, xpathQuery );
 
-//        int removed = 0;
-//
-//        for( Node node : nodes ) {
-//            if( removeNode(node) )
-//                removed++;
-//        }
-//
-//        return removed;
+        int removed = 0;
 
-        return (int)nodes.stream().filter(Xco::removeNode).count();
+        for( Node node : nodes ) {
+            if( removeNode(node) )
+                removed++;
+        }
+
+        return removed;
     }
 
     /** */
@@ -537,34 +536,38 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
                 return true;
 
             case ELEMENT_NODE:
+
+                Node parent = node.getParentNode();
+                if( !(parent instanceof Element) )
+                    return false;
+
                 Xco xco = (Xco)node.getUserData(USER_DATA_KEY);
 
-                if( xco != null )
+                if( xco != null ) {
                     xco.value = null;
+                }
 
                 node.setUserData(USER_DATA_KEY, null, null);
 
-                Node parent = node.getParentNode();
-
-                if( !(parent instanceof Element) )
-                    return false;
 
                 parent.removeChild(node);
                 return true;
 
             case TEXT_NODE:
             case CDATA_SECTION_NODE:
+
                 Node textParent = node.getParentNode();
 
                 if( !(textParent instanceof Element) )
                     return false;
 
-                Xco parentXco = (Xco)((Element)textParent).getUserData(USER_DATA_KEY);
+                textParent.removeChild(node);
+
+                Xco parentXco = (Xco)textParent.getUserData(USER_DATA_KEY);
 
                 if( parentXco != null )
-                    parentXco.value = null;
+                    parentXco.value = NodeSupport.nodeValue( NodeSupport.firstTextNode( (Element)textParent) );
 
-                textParent.removeChild(node);
                 return true;
 
             default:
