@@ -28,7 +28,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         this.element = Objects.requireNonNull( element, "'element' is null" );
         this.attr    = null;
         this.element.setUserData( USER_DATA_KEY, this, null );
-        this.value   = nodeValue( firstTextNode(element) );
+        this.value   = NodeSupport.nodeValue( NodeSupport.firstTextNode(element) );
     }
 
     /** */
@@ -180,7 +180,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
             return this;
         }
 
-        clearTextNodes(element);
+        NodeSupport.clearTextNodes(element);
 
         String text = S.toString(value);
 
@@ -400,7 +400,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         if( isAttribute() )
             return Collections.emptyIterator();
 
-        final Iterator<Element> iterator = directElementIterator(element);
+        final Iterator<Element> iterator = NodeSupport.directElementIterator(element);
 
         return new Iterator<Xco>() {
             @Override
@@ -454,77 +454,6 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         return null;
     }
 
-    private static Iterator<Element> directElementIterator( final Element element )
-    {
-
-        return new Iterator<Element>() {
-
-            private Node next = firstElement(element.getFirstChild());
-
-            @Override
-            public boolean hasNext() {
-                return next != null;
-            }
-
-            @Override
-            public Element next() {
-
-                if( next == null )
-                    throw new NoSuchElementException();
-
-                Element result = (Element)next;
-                next = firstElement(next.getNextSibling());
-
-                return result;
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException("'remove' not supported");
-            }
-        };
-    }
-
-    /** */
-    private static Node firstElement(Node node) {
-
-        while( node != null && node.getNodeType() != ELEMENT_NODE )
-               node = node.getNextSibling();
-
-        return node;
-    }
-
-    private static Node firstTextNode( Element element )
-    {
-        for( Node node = element.getFirstChild(); node != null; node = node.getNextSibling() )
-        {
-            short type = node.getNodeType();
-
-            if( type == TEXT_NODE || type == CDATA_SECTION_NODE )
-                return node;
-        }
-
-        return null;
-    }
-
-    private static String nodeValue( Node node ) {
-        return node == null ? null : node.getNodeValue();
-    }
-
-    private static void clearTextNodes(Element element) {
-
-        for( Node child = element.getFirstChild(); child != null; ) {
-
-            Node next = child.getNextSibling();
-            short type = child.getNodeType();
-
-            if( type == TEXT_NODE || type == CDATA_SECTION_NODE )
-                element.removeChild(child);
-
-            child = next;
-        }
-    }
-
     /** */
     private static void validateName( String name, String message )
     {
@@ -567,6 +496,79 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
                 return node.getParentNode() instanceof Element ? wrap((Element)node.getParentNode()) : null;
             default:
                 return null;
+        }
+    }
+
+    /** */
+    public int remove( String xpathQuery )
+    {
+        if( isAttribute() || S.isNullOrEmpty(xpathQuery) )
+            return 0;
+
+        List<Node> nodes = XPathSupport.select( element, xpathQuery );
+
+//        int removed = 0;
+//
+//        for( Node node : nodes ) {
+//            if( removeNode(node) )
+//                removed++;
+//        }
+//
+//        return removed;
+
+        return (int)nodes.stream().filter(Xco::removeNode).count();
+    }
+
+    /** */
+    private static boolean removeNode( Node node )
+    {
+        if( node == null )
+            return false;
+
+        switch( node.getNodeType() ) {
+            case ATTRIBUTE_NODE:
+                Attr attr = (Attr)node;
+                Element owner = attr.getOwnerElement();
+
+                if( owner == null )
+                    return false;
+
+                owner.removeAttributeNode(attr);
+                return true;
+
+            case ELEMENT_NODE:
+                Xco xco = (Xco)node.getUserData(USER_DATA_KEY);
+
+                if( xco != null )
+                    xco.value = null;
+
+                node.setUserData(USER_DATA_KEY, null, null);
+
+                Node parent = node.getParentNode();
+
+                if( !(parent instanceof Element) )
+                    return false;
+
+                parent.removeChild(node);
+                return true;
+
+            case TEXT_NODE:
+            case CDATA_SECTION_NODE:
+                Node textParent = node.getParentNode();
+
+                if( !(textParent instanceof Element) )
+                    return false;
+
+                Xco parentXco = (Xco)((Element)textParent).getUserData(USER_DATA_KEY);
+
+                if( parentXco != null )
+                    parentXco.value = null;
+
+                textParent.removeChild(node);
+                return true;
+
+            default:
+                return false;
         }
     }
 }
