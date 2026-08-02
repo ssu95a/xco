@@ -4,8 +4,7 @@ import org.junit.Test;
 
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestXco {
     @Test
@@ -67,5 +66,50 @@ public class TestXco {
         assertEquals("root", xco.name());
         assertEquals("value", xco.get());
         assertEquals(1, xco.count("item"));
+    }
+
+    @Test
+    public void shouldRemoveAttributeByXPath() {
+
+        Xco xco = Xco.parseXml("<user id=\"100\" name=\"Sergey\"/>");
+
+        assertEquals(1, xco.remove("@id"));
+
+        assertFalse(xco.hasAttribute("id"));
+        assertTrue(xco.hasAttribute("name"));
+    }
+
+    @Test
+    public void shouldRemoveTextButKeepElement() {
+
+        Xco xco = Xco.parseXml("<user><name>Sergey</name></user>");
+        Xco name = xco.e("name");
+
+        assertEquals(1, xco.remove("name/text()"));
+
+        assertTrue(xco.hasElement("name"));
+        assertNull(name.get());
+    }
+
+    @Test
+    public void shouldRefreshValueAfterRemovingFirstTextNode() {
+
+        Xco xco = Xco.parseXml(
+                "<root><name>one<![CDATA[two]]></name></root>"
+        );
+
+        Xco name = xco.e("name");
+
+        assertEquals("one", name.get());
+        assertEquals(1, xco.remove("name/text()"));
+        assertEquals("two", name.get());
+    }
+
+    @Test(expected = XcoPathException.class)
+    public void shouldThrowSpecializedExceptionForInvalidXPath() {
+
+        Xco xco = Xco.parseXml("<root/>");
+
+        xco.remove("//*[");
     }
 }

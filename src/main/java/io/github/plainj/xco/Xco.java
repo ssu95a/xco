@@ -574,4 +574,35 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
                 return false;
         }
     }
+
+    /** */
+    public void writeJson( Object target ) {
+        writeJson(target, false);
+    }
+
+    /** */
+    public void writeJson( Object target, boolean pretty ) {
+        JsonSupport.write(this, target, pretty);
+    }
+
+    /** */
+    public String toJson( ) {
+        return toJson(false);
+    }
+
+    /** */
+    public String toJson( boolean pretty )
+    {
+        StringWriter writer = new StringWriter();
+        writeJson(writer, pretty);
+        return writer.toString();
+    }
+
+    /** */
+    public byte[] toJsonBytes( )
+    {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        writeJson(stream, false);
+        return stream.toByteArray();
+    }
 }

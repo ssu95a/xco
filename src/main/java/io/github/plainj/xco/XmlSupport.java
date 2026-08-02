@@ -72,7 +72,7 @@ final class XmlSupport {
             return;
         }
 
-        throw new XcoWriteException( "Unsupported XML target type: " + target.getClass().getName());
+        throw new XcoWriteException( "[XML] Unsupported XML target type: " + target.getClass().getName());
     }
 
     private static void write(Node node, Result result, Charset charset, boolean declaration )
@@ -99,7 +99,7 @@ final class XmlSupport {
             transformer.transform( new DOMSource(node), result );
         }
         catch( Throwable th ) {
-            throw new XcoWriteException( "Error on write XML", th );
+            throw new XcoWriteException( "[XML] Error on write XML", th );
         }
     }
 
@@ -155,11 +155,8 @@ final class XmlSupport {
 
             throw new XcoReadException( "Unsupported XML source type: " + source.getClass().getName() );
         }
-        catch( XcoReadException ex ) {
-            throw ex;
-        }
         catch( Throwable th ) {
-            throw new XcoReadException( "Error on read XML from " + source, th );
+            throw XcoException.toXcoException( "Error on read XML from " + source, th );
         }
     }
 
@@ -171,7 +168,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw new XcoReadException("Error on read XML from file: " + file, th);
+            throw XcoException.toXcoException("Error on read XML from file: " + file, th);
         }
     }
 
@@ -183,7 +180,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw new XcoReadException("Error on read XML from path: " + path, th);
+            throw XcoException.toXcoException("Error on read XML from path: " + path, th);
         }
     }
 
@@ -195,7 +192,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw new XcoReadException("Error on read XML from url: " + url, th);
+            throw XcoException.toXcoException("Error on read XML from url: " + url, th);
         }
     }
 
@@ -241,7 +238,7 @@ final class XmlSupport {
             return DOCUMENT_BUILDER_FACTORY.newDocumentBuilder();
         }
         catch( Throwable th ) {
-            throw new XcoException("Error on create DocumentBuilder", th);
+            throw XcoException.toXcoException("Error on create DocumentBuilder", th);
         }
     }
 

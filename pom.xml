@@ -22,6 +22,9 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <junit.version>4.13.2</junit.version>
+
+        <javax.json.version>1.1.4</javax.json.version>
+
     </properties>
 
     <licenses>
@@ -55,6 +58,13 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+            <version>${javax.json.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
