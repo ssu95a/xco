@@ -605,4 +605,9 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         writeJson(stream, false);
         return stream.toByteArray();
     }
+
+    /** */
+    public static Xco parseJson( Object source ) {
+        return JsonSupport.read(source);
+    }
 }

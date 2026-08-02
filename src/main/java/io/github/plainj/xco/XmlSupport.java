@@ -156,8 +156,10 @@ final class XmlSupport {
             throw new XcoReadException( "Unsupported XML source type: " + source.getClass().getName() );
         }
         catch( Throwable th ) {
-            throw XcoException.toXcoException( "Error on read XML from " + source, th );
-        }
+            throw new XcoReadException(
+                    "[XML] Error on read XML from " + source,
+                    th
+            );        }
     }
 
     private static Element read(File file, Charset charset) {
@@ -168,7 +170,8 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw XcoException.toXcoException("Error on read XML from file: " + file, th);
+            throw new XcoReadException(
+                    "[XML] Error on read XML from file" + file, th );
         }
     }
 
@@ -180,7 +183,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw XcoException.toXcoException("Error on read XML from path: " + path, th);
+            throw new XcoReadException("[XML] Error on read XML from path: " + path, th);
         }
     }
 
@@ -192,7 +195,7 @@ final class XmlSupport {
             return read(streamInputSource(is, charset));
         }
         catch( Throwable th ) {
-            throw XcoException.toXcoException("Error on read XML from url: " + url, th);
+            throw new XcoReadException("[XML] Error on read XML from url: " + url, th);
         }
     }
 
@@ -222,6 +225,7 @@ final class XmlSupport {
         return source;
     }
 
+    /** */
     private static InputSource streamInputSource(InputStream stream, Charset charset) {
 
         InputSource source = new InputSource(stream);
@@ -232,13 +236,14 @@ final class XmlSupport {
         return source;
     }
 
+    /** */
     private static DocumentBuilder documentBuilder() {
 
         try {
             return DOCUMENT_BUILDER_FACTORY.newDocumentBuilder();
         }
         catch( Throwable th ) {
-            throw XcoException.toXcoException("Error on create DocumentBuilder", th);
+            throw new XcoException("[XML] Error on create DocumentBuilder", th);
         }
     }
 
