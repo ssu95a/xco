@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 public class TestXco {
     @Test
     public void shouldSelectSingleByXPath() {
-        Xco x = Xco.parseXml("<user><name>Sergey</name></user>");
+        Xco x = XcoXml.parse("<user><name>Sergey</name></user>");
 
         Optional<Xco> name = x.single("name");
 
@@ -20,7 +20,7 @@ public class TestXco {
 
     @Test
     public void shouldSelectAttributeByXPath() {
-        Xco x = Xco.parseXml("<user id=\"100\"/>");
+        Xco x = XcoXml.parse("<user id=\"100\"/>");
 
         Optional<Xco> id = x.single("@id");
 
@@ -30,14 +30,14 @@ public class TestXco {
 
     @Test
     public void shouldCountXPathNodes() {
-        Xco x = Xco.parseXml("<roles><role>a</role><role>b</role></roles>");
+        Xco x = XcoXml.parse("<roles><role>a</role><role>b</role></roles>");
 
         assertEquals(2, x.count("role"));
     }
 
     @Test
     public void shouldSelectManyByXPath() {
-        Xco x = Xco.parseXml("<roles><role>a</role><role>b</role></roles>");
+        Xco x = XcoXml.parse("<roles><role>a</role><role>b</role></roles>");
 
         int count = 0;
         for( Xco role : x.select("role") )
@@ -48,7 +48,7 @@ public class TestXco {
 
     @Test
     public void shouldMapTextNodeXPathToParentElement() {
-        Xco x = Xco.parseXml("<user><name>Sergey</name></user>");
+        Xco x = XcoXml.parse("<user><name>Sergey</name></user>");
 
         Optional<Xco> name = x.single("name/text()");
 
@@ -60,7 +60,7 @@ public class TestXco {
     @Test
     public void shouldNotCorruptRootWhenXPathSelectsCurrentNode() {
 
-        Xco xco = Xco.parseXml("<root>value<item/></root>");
+        Xco xco = XcoXml.parse("<root>value<item/></root>");
 
         assertEquals(0, xco.remove("."));
 
@@ -72,7 +72,7 @@ public class TestXco {
     @Test
     public void shouldRemoveAttributeByXPath() {
 
-        Xco xco = Xco.parseXml("<user id=\"100\" name=\"Sergey\"/>");
+        Xco xco = XcoXml.parse("<user id=\"100\" name=\"Sergey\"/>");
 
         assertEquals(1, xco.remove("@id"));
 
@@ -83,7 +83,7 @@ public class TestXco {
     @Test
     public void shouldRemoveTextButKeepElement() {
 
-        Xco xco = Xco.parseXml("<user><name>Sergey</name></user>");
+        Xco xco = XcoXml.parse("<user><name>Sergey</name></user>");
         Xco name = xco.e("name");
 
         assertEquals(1, xco.remove("name/text()"));
@@ -95,7 +95,7 @@ public class TestXco {
     @Test
     public void shouldRefreshValueAfterRemovingFirstTextNode() {
 
-        Xco xco = Xco.parseXml(
+        Xco xco = XcoXml.parse(
                 "<root><name>one<![CDATA[two]]></name></root>"
         );
 
@@ -109,7 +109,7 @@ public class TestXco {
     @Test(expected = XcoPathException.class)
     public void shouldThrowSpecializedExceptionForInvalidXPath() {
 
-        Xco xco = Xco.parseXml("<root/>");
+        Xco xco = XcoXml.parse("<root/>");
 
         xco.remove("//*[");
     }
@@ -117,7 +117,7 @@ public class TestXco {
     // JSON //
     @Test
     public void shouldWriteScalarJson() {
-        assertEquals( "{\"value\":100}", Xco.of("value").set(100).toJson() );
+        assertEquals( "{\"value\":100}", Xco.of("value").set(100).json().text() );
     }
 
     @Test
@@ -130,7 +130,7 @@ public class TestXco {
 
         assertEquals(
                 "{\"user\":{\"@id\":\"100\",\"name\":\"Sergey\"}}",
-                xco.toJson()
+                xco.json().text()
         );
     }
 
@@ -144,7 +144,7 @@ public class TestXco {
 
         assertEquals(
                 "{\"roles\":{\"role\":[\"admin\",\"user\"]}}",
-                xco.toJson()
+                xco.json().text()
         );
     }
 
@@ -158,7 +158,7 @@ public class TestXco {
 
         assertEquals(
                 "{\"message\":{\"@lang\":\"ru\",\"#value\":\"Привет\"}}",
-                xco.toJson()
+                xco.json().text()
         );
     }
 
@@ -173,14 +173,14 @@ public class TestXco {
 
         assertEquals(
                 "{\"data\":{\"enabled\":true,\"count\":10,\"price\":12.50}}",
-                xco.toJson()
+                xco.json().text()
         );
     }
 
     @Test
     public void shouldReadScalarJson() {
 
-        Xco xco = Xco.parseJson("{\"value\":100}");
+        Xco xco = XcoJson.parse("{\"value\":100}");
 
         assertEquals("value", xco.name());
         assertEquals(100, xco.get());
@@ -189,7 +189,7 @@ public class TestXco {
     @Test
     public void shouldReadAttributesAndChildren() {
 
-        Xco xco = Xco.parseJson(
+        Xco xco = XcoJson.parse(
                 "{\"user\":{\"@id\":\"100\",\"name\":\"Sergey\"}}"
         );
 
@@ -200,7 +200,7 @@ public class TestXco {
     @Test
     public void shouldReadRepeatedChildrenFromArray() {
 
-        Xco xco = Xco.parseJson(
+        Xco xco = XcoJson.parse(
                 "{\"roles\":{\"role\":[\"admin\",\"user\"]}}"
         );
 
@@ -212,7 +212,7 @@ public class TestXco {
     @Test
     public void shouldReadValueWithAttributes() {
 
-        Xco xco = Xco.parseJson(
+        Xco xco = XcoJson.parse(
                 "{\"message\":{\"@lang\":\"ru\",\"#value\":\"Привет\"}}"
         );
 
@@ -234,28 +234,28 @@ public class TestXco {
 
         assertEquals(
                 json,
-                Xco.parseJson(json).toJson()
+                XcoJson.parse(json).json().text()
         );
     }
 
     @Test(expected = XcoReadException.class)
     public void shouldRejectMultipleRootFields() {
-        Xco.parseJson("{\"a\":1,\"b\":2}");
+        XcoJson.parse("{\"a\":1,\"b\":2}");
     }
 
     @Test(expected = XcoReadException.class)
     public void shouldRejectRootArray() {
-        Xco.parseJson("[1,2]");
+        XcoJson.parse("[1,2]");
     }
 
     @Test(expected = XcoReadException.class)
     public void shouldRejectNestedArrays() {
-        Xco.parseJson("{\"root\":{\"item\":[[1,2]]}}");
+        XcoJson.parse("{\"root\":{\"item\":[[1,2]]}}");
     }
 
     @Test(expected = XcoReadException.class)
     public void shouldRejectUnknownReservedField() {
-        Xco.parseJson("{\"root\":{\"#unknown\":1}}");
+        XcoJson.parse("{\"root\":{\"#unknown\":1}}");
     }
 
     @Test
@@ -278,5 +278,46 @@ public class TestXco {
 
         assertEquals("value", xco.name());
         assertEquals(100, xco.get());
+    }
+
+    @Test(expected = XcoReadException.class)
+    public void shouldRejectArrayWithExplicitRoot() {
+        XcoJson.parse("root", "[1,2]");
+    }
+
+    @Test
+    public void shouldConvertJsonToXml() {
+
+        Xco xco = XcoJson.parse(
+                "{\"user\":{\"name\":\"Sergey\"}}"
+        );
+
+        assertEquals(
+                "<user><name>Sergey</name></user>",
+                xco.xml().text()
+        );
+    }
+
+    @Test
+    public void shouldConvertXmlToJson() {
+
+        Xco xco = XcoXml.parse(
+                "<user><name>Sergey</name></user>"
+        );
+
+        assertEquals(
+                "{\"user\":{\"name\":\"Sergey\"}}",
+                xco.json().text()
+        );
+    }
+
+    @Test
+    public void shouldPrettyPrintJson() {
+
+        Xco xco = Xco.of("user").e("name", "Sergey");
+
+        String json = xco.json().text(true);
+
+        assertTrue(json.contains("\n"));
     }
 }
