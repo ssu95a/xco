@@ -331,7 +331,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
             return this;
         }
 
-        throw new XcoException( "[XML] Node '" + name() + "' cannot be removed");
+        throw new XcoException( "[XCO] Node '" + name() + "' cannot be removed");
     }
 
     /** */
@@ -420,8 +420,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
     @Override
     public String toString() {
-        return isAttribute() ? "XcoAttr{" + name() + "=" + get() + "}"
-                : "Xco{" + name() + "=" + get() + "}";
+        return isAttribute() ? "XcoAttr{" + name() + "=" + get() + "}" : "Xco{" + name() + "=" + get() + "}";
     }
 
     /* **/

@@ -346,31 +346,35 @@ final class JsonSupport {
     }
 
     /** */
-    static Xco read( Object source )
+    private static JsonValue readJsonValue( Object source )
     {
         Objects.requireNonNull(source, "'source' is null");
 
         try {
             if( source instanceof CharSequence )
-                return read(new StringReader(source.toString()));
+                return readJsonValue(
+                        new StringReader(source.toString())
+                );
 
             if( source instanceof Reader )
-                return read((Reader)source);
+                return readJsonValue((Reader)source);
 
             if( source instanceof InputStream )
-                return read((InputStream)source);
+                return readJsonValue((InputStream)source);
 
             if( source instanceof byte[] )
-                return read(new ByteArrayInputStream((byte[])source));
+                return readJsonValue(
+                        new ByteArrayInputStream((byte[])source)
+                );
 
             if( source instanceof File )
-                return read(((File)source).toPath());
+                return readJsonValue(((File)source).toPath());
 
             if( source instanceof Path )
-                return read((Path)source);
+                return readJsonValue((Path)source);
 
             if( source instanceof URL )
-                return read((URL)source);
+                return readJsonValue((URL)source);
 
             throw new XcoReadException(
                     "[JSON] Unsupported JSON source type: "
@@ -389,36 +393,84 @@ final class JsonSupport {
     }
 
     /** */
-    private static Xco read( Reader reader )
+    static Xco read( String rootName, Object source )
+    {
+        if( S.isNullOrEmpty(rootName) )
+            throw new IllegalArgumentException("'rootName' is empty");
+
+        JsonValue value = readJsonValue(source);
+
+        Xco xco = Xco.of(rootName);
+
+        readValue( xco, value);
+
+        return xco;
+    }
+
+    /** */
+    static Xco read( Object source )
+    {
+        JsonValue value = readJsonValue(source);
+
+        if( value == null || value.getValueType() != JsonValue.ValueType.OBJECT )
+            throw new XcoReadException( "[JSON] JSON document root must be an object" );
+
+        return readDocument((JsonObject)value);
+    }
+
+    /** */
+    private static JsonValue readJsonValue( Reader reader )
     {
         try {
-            JsonReader jsonReader = Json.createReader(reader);
-            return readDocument(jsonReader.readObject());
+            final JsonReader jsonReader = Json.createReader(reader);
+            return jsonReader.readValue();
+        }
+        catch( Throwable th ) {
+            throw new XcoReadException( "[JSON] Error on read JSON from Reader", th );
+        }
+    }
+
+    /** */
+    private static JsonValue readJsonValue( InputStream stream )
+    {
+        try {
+            JsonReader jsonReader = Json.createReader(stream);
+            return jsonReader.readValue();
+        }
+        catch( Throwable th ) {
+            throw new XcoReadException( "[JSON] Error on read JSON from InputStream", th );
+        }
+    }
+
+    /** */
+    private static JsonValue readJsonValue( Path path )
+    {
+        try( InputStream stream = Files.newInputStream(path) ) {
+            return readJsonValue(stream);
         }
         catch( XcoReadException ex ) {
             throw ex;
         }
         catch( Throwable th ) {
             throw new XcoReadException(
-                    "[JSON] Error on read JSON from Reader",
+                    "[JSON] Error on read JSON from path: " + path,
                     th
             );
         }
     }
 
     /** */
-    private static Xco read( InputStream stream )
+    private static JsonValue readJsonValue( URL url )
     {
-        try {
-            JsonReader jsonReader = Json.createReader(stream);
-            return readDocument(jsonReader.readObject());
+        try( InputStream stream = url.openStream() ) {
+            return readJsonValue(stream);
         }
         catch( XcoReadException ex ) {
             throw ex;
         }
         catch( Throwable th ) {
             throw new XcoReadException(
-                    "[JSON] Error on read JSON from InputStream",
+                    "[JSON] Error on read JSON from URL: " + url,
                     th
             );
         }

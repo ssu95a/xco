@@ -257,4 +257,26 @@ public class TestXco {
     public void shouldRejectUnknownReservedField() {
         Xco.parseJson("{\"root\":{\"#unknown\":1}}");
     }
+
+    @Test
+    public void shouldReadJsonWithExplicitRoot() {
+
+        Xco xco = XcoJson.parse(
+                "user",
+                "{\"name\":\"Sergey\",\"active\":true}"
+        );
+
+        assertEquals("user", xco.name());
+        assertEquals("Sergey", xco.getIfPresent("name"));
+        assertEquals(true, xco.getIfPresent("active"));
+    }
+
+    @Test
+    public void shouldReadScalarWithExplicitRoot() {
+
+        Xco xco = XcoJson.parse("value", "100");
+
+        assertEquals("value", xco.name());
+        assertEquals(100, xco.get());
+    }
 }
