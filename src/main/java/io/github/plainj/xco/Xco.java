@@ -13,10 +13,7 @@ import static org.w3c.dom.Node.*;
 
 public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Object> {
 
-    final private static String Log_Prfx = "[XCO] ";
-
-    private static final String USER_DATA_KEY = "plainj.xco";
-
+    private static final String XCO_DATA_KEY = "plainj.xco";
 
     private final Element element;
     private final Attr    attr;
@@ -27,7 +24,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     private Xco( Element element ) {
         this.element = Objects.requireNonNull( element, "'element' is null" );
         this.attr    = null;
-        this.element.setUserData( USER_DATA_KEY, this, null );
+        this.element.setUserData(XCO_DATA_KEY, this, null );
         this.value   = NodeSupport.nodeValue( NodeSupport.firstTextNode(element) );
     }
 
@@ -328,13 +325,13 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
         if( parent instanceof Element )
         {
-            element.setUserData(USER_DATA_KEY, null, null);
+            element.setUserData(XCO_DATA_KEY, null, null);
             parent.removeChild(element);
             value = null;
             return this;
         }
 
-        throw new XcoException( Log_Prfx + "Node '" + name() + "' cannot be removed");
+        throw new XcoException( "[XML] Node '" + name() + "' cannot be removed");
     }
 
     /** */
@@ -423,14 +420,14 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
     @Override
     public String toString() {
-        return isAttribute()
-                ? "XcoAttr{" + name() + "=" + get() + "}"
+        return isAttribute() ? "XcoAttr{" + name() + "=" + get() + "}"
                 : "Xco{" + name() + "=" + get() + "}";
     }
 
-    private static Xco wrap( Element element )
+    /* **/
+    static Xco wrap( Element element )
     {
-        Xco xco = (Xco)element.getUserData(USER_DATA_KEY);
+        Xco xco = (Xco)element.getUserData(XCO_DATA_KEY);
 
         if( xco != null )
             return xco;
@@ -442,9 +439,10 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     /** */
     private void ensureElement() {
         if( isAttribute() )
-            throw new XcoException( Log_Prfx + "Attribute '" + name() + "' does not support element operation" );
+            throw new XcoException( "[XCO] Attribute '" + name() + "' does not support element operation" );
     }
 
+    /** */
     private Element firstDirectChild( String name )
     {
         for( Node child = element.getFirstChild(); child != null; child = child.getNextSibling() ) {
@@ -541,13 +539,13 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
                 if( !(parent instanceof Element) )
                     return false;
 
-                Xco xco = (Xco)node.getUserData(USER_DATA_KEY);
+                Xco xco = (Xco)node.getUserData(XCO_DATA_KEY);
 
                 if( xco != null ) {
                     xco.value = null;
                 }
 
-                node.setUserData(USER_DATA_KEY, null, null);
+                node.setUserData(XCO_DATA_KEY, null, null);
 
 
                 parent.removeChild(node);
@@ -563,7 +561,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
 
                 textParent.removeChild(node);
 
-                Xco parentXco = (Xco)textParent.getUserData(USER_DATA_KEY);
+                Xco parentXco = (Xco)textParent.getUserData(XCO_DATA_KEY);
 
                 if( parentXco != null )
                     parentXco.value = NodeSupport.nodeValue( NodeSupport.firstTextNode( (Element)textParent) );
@@ -609,5 +607,15 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     /** */
     public static Xco parseJson( Object source ) {
         return JsonSupport.read(source);
+    }
+
+    /** */
+    public XcoXml xml() {
+        return new XcoXml(this);
+    }
+
+    /** */
+    public XcoJson json() {
+        return new XcoJson(this);
     }
 }
