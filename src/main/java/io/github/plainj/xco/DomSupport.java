@@ -1,17 +1,20 @@
 package io.github.plainj.xco;
 
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import static org.w3c.dom.Node.*;
 
 /** */
-final class NodeSupport {
+final class DomSupport {
 
-    private NodeSupport( ) {
+    private DomSupport( ) {
     }
 
     /** */
@@ -84,6 +87,17 @@ final class NodeSupport {
                 element.removeChild(child);
 
             child = next;
+        }
+    }
+
+    /** */
+    static Document newDocument()
+    {
+        try {
+            return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        }
+        catch( ParserConfigurationException ex ) {
+            throw new XcoException( "[XCO] Error on create DOM document", ex );
         }
     }
 }

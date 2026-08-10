@@ -155,11 +155,12 @@ final class XmlSupport {
 
             throw new XcoReadException( "Unsupported XML source type: " + source.getClass().getName() );
         }
+        catch( XcoReadException ex ) {
+            throw ex;
+        }
         catch( Throwable th ) {
-            throw new XcoReadException(
-                    "[XML] Error on read XML from " + source,
-                    th
-            );        }
+            throw new XcoReadException( "[XML] Error on read XML from " + source, th );
+        }
     }
 
     private static Element read(File file, Charset charset) {

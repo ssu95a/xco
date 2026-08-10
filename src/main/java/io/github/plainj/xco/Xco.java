@@ -2,8 +2,7 @@ package io.github.plainj.xco;
 
 import org.w3c.dom.*;
 
-import java.io.*;
-import java.nio.charset.Charset;
+
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -25,7 +24,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         this.element = Objects.requireNonNull( element, "'element' is null" );
         this.attr    = null;
         this.element.setUserData(XCO_DATA_KEY, this, null );
-        this.value   = NodeSupport.nodeValue( NodeSupport.firstTextNode(element) );
+        this.value   = DomSupport.nodeValue( DomSupport.firstTextNode(element) );
     }
 
     /** */
@@ -177,7 +176,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
             return this;
         }
 
-        NodeSupport.clearTextNodes(element);
+        DomSupport.clearTextNodes(element);
 
         String text = S.toString(value);
 
@@ -369,7 +368,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         return this;
     }
 
-
+    /** */
     Node node() {
         ensureElement();
         return element;
@@ -381,7 +380,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
         if( isAttribute() )
             return Collections.emptyIterator();
 
-        final Iterator<Element> iterator = NodeSupport.directElementIterator(element);
+        final Iterator<Element> iterator = DomSupport.directElementIterator(element);
 
         return new Iterator<Xco>() {
             @Override
@@ -447,7 +446,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
     {
         validateName( rootName, "'rootName' is empty" );
 
-        Document document = XmlSupport.newDocument();
+        Document document = DomSupport.newDocument();
         Element root = document.createElement(rootName);
         document.appendChild(root);
 
@@ -538,7 +537,7 @@ public final class Xco implements Iterable<Xco>, Supplier<Object>, Consumer<Obje
                 Xco parentXco = (Xco)textParent.getUserData(XCO_DATA_KEY);
 
                 if( parentXco != null )
-                    parentXco.value = NodeSupport.nodeValue( NodeSupport.firstTextNode( (Element)textParent) );
+                    parentXco.value = DomSupport.nodeValue( DomSupport.firstTextNode( (Element)textParent) );
 
                 return true;
 
