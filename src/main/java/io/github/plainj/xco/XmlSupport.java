@@ -248,12 +248,6 @@ final class XmlSupport {
         }
     }
 
-    /** */
-    static Document newDocument() {
-
-        return documentBuilder().newDocument();
-    }
-
     private static DocumentBuilderFactory createDocumentBuilderFactory() throws ParserConfigurationException {
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
