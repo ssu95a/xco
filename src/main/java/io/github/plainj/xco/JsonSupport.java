@@ -338,185 +338,35 @@ final class JsonSupport {
     /** */
     private static JsonGeneratorFactory generatorFactory(boolean pretty )
     {
-        return Json.createGeneratorFactory(
-                pretty
-                        ? PRETTY_CONFIG
-                        : Collections.<String, Object>emptyMap()
-        );
-    }
-
-    /** */
-    private static JsonValue readJsonValue( Object source )
-    {
-        Objects.requireNonNull(source, "'source' is null");
-
-        try {
-            if( source instanceof CharSequence )
-                return readJsonValue(
-                        new StringReader(source.toString())
-                );
-
-            if( source instanceof Reader )
-                return readJsonValue((Reader)source);
-
-            if( source instanceof InputStream )
-                return readJsonValue((InputStream)source);
-
-            if( source instanceof byte[] )
-                return readJsonValue(
-                        new ByteArrayInputStream((byte[])source)
-                );
-
-            if( source instanceof File )
-                return readJsonValue(((File)source).toPath());
-
-            if( source instanceof Path )
-                return readJsonValue((Path)source);
-
-            if( source instanceof URL )
-                return readJsonValue((URL)source);
-
-            throw new XcoReadException(
-                    "[JSON] Unsupported JSON source type: "
-                            + source.getClass().getName()
-            );
-        }
-        catch( XcoReadException ex ) {
-            throw ex;
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException(
-                    "[JSON] Error on read JSON",
-                    th
-            );
-        }
+        return Json.createGeneratorFactory( pretty ? PRETTY_CONFIG : Collections.<String, Object>emptyMap() );
     }
 
 
     /** */
     static Xco read( JsonValue value )
     {
+        Objects.requireNonNull(value, "'value' is null");
 
+        if( value.getValueType() != JsonValue.ValueType.OBJECT )
+            throw new XcoReadException( "[JSON] JSON document root must be an object" );
+
+        return readDocument( value.asJsonObject() );
     }
+
 
     /** */
     static Xco read( String rootName, JsonValue value )
     {
-
-    }
-
-    /** */
-    static Xco read( String rootName, Object source )
-    {
         if( S.isNullOrEmpty(rootName) )
-            throw new IllegalArgumentException("'rootName' is empty");
-
-        JsonValue value = readJsonValue(source);
+            throw new IllegalArgumentException( "'rootName' is empty" );
+        Objects.requireNonNull(value, "'value' is null");
 
         Xco xco = Xco.of(rootName);
-
-        readValue( xco, value);
+        readValue(xco, value);
 
         return xco;
     }
 
-    /** */
-    static Xco read( Object source )
-    {
-        JsonValue value = readJsonValue(source);
-
-        if( value == null || value.getValueType() != JsonValue.ValueType.OBJECT )
-            throw new XcoReadException( "[JSON] JSON document root must be an object" );
-
-        return readDocument((JsonObject)value);
-    }
-
-    /** */
-    private static JsonValue readJsonValue( Reader reader )
-    {
-        try {
-            final JsonReader jsonReader = Json.createReader(reader);
-            return jsonReader.readValue();
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException( "[JSON] Error on read JSON from Reader", th );
-        }
-    }
-
-    /** */
-    private static JsonValue readJsonValue( InputStream stream )
-    {
-        try {
-            JsonReader jsonReader = Json.createReader(stream);
-            return jsonReader.readValue();
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException( "[JSON] Error on read JSON from InputStream", th );
-        }
-    }
-
-    /** */
-    private static JsonValue readJsonValue( Path path )
-    {
-        try( InputStream stream = Files.newInputStream(path) ) {
-            return readJsonValue(stream);
-        }
-        catch( XcoReadException ex ) {
-            throw ex;
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException(
-                    "[JSON] Error on read JSON from path: " + path,
-                    th
-            );
-        }
-    }
-
-    /** */
-    private static JsonValue readJsonValue( URL url )
-    {
-        try( InputStream stream = url.openStream() ) {
-            return readJsonValue(stream);
-        }
-        catch( XcoReadException ex ) {
-            throw ex;
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException(
-                    "[JSON] Error on read JSON from URL: " + url,
-                    th
-            );
-        }
-    }
-
-    /** */
-    private static Xco read( Path path )
-    {
-        try( InputStream stream = Files.newInputStream(path) ) {
-            return read(stream);
-        }
-        catch( XcoReadException ex ) {
-            throw ex;
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException(
-                    "[JSON] Error on read JSON from path: " + path,
-                    th
-            );
-        }
-    }
-
-    /** */
-    private static Xco read( URL url )
-    {
-        try( InputStream stream = url.openStream() ) {
-            return read(stream);
-        }
-        catch( XcoReadException ex ) {
-            throw ex;
-        }
-        catch( Throwable th ) { throw new XcoReadException( "[JSON] Error on read JSON from URL: " + url, th ); }
-    }
 
     /** */
     private static Xco readDocument( JsonObject document )
