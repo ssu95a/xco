@@ -392,6 +392,19 @@ final class JsonSupport {
         }
     }
 
+
+    /** */
+    static Xco read( JsonValue value )
+    {
+
+    }
+
+    /** */
+    static Xco read( String rootName, JsonValue value )
+    {
+
+    }
+
     /** */
     static Xco read( String rootName, Object source )
     {

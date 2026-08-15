@@ -16,7 +16,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
-import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Objects;
 
@@ -241,6 +240,9 @@ final class XmlSupport {
     static void validate( Node node, Source xsd )
     {
         try {
+
+            Objects.requireNonNull(node, "'node' is null");
+            Objects.requireNonNull(xsd, "'xsd' is null");
 
             SchemaFactory factory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
             factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
