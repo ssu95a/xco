@@ -2,7 +2,9 @@ package io.github.plainj.xco;
 
 import org.xml.sax.InputSource;
 
+import javax.xml.transform.Result;
 import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.net.URL;
@@ -102,27 +104,59 @@ public final class XcoXml implements XcoFormat {
             throw new XcoReadException( "[XML] Error on read XML from URL: " + url, th );
         }
     }
-    /**
-     *
-     */
+
+    //
+    // Save zone
+    //
+
+
     @Override
-    public void save( Object target ) {
+    public void save( Object target )
+    {
         save(target, null, false);
     }
 
-    /**
-     *
-     */
-    public void save( Object target, Charset charset ) {
+    /** */
+    public void save( Object target, Charset charset )
+    {
         save(target, charset, false);
     }
 
-    /**
-     *
-     */
+    /** */
     public void save( Object target, Charset charset, boolean declaration )
     {
-        XmlSupport.write( xco.node(), target, charset, declaration );
+        Objects.requireNonNull(target, "'target' is null");
+
+        Charset effectiveCharset = charset == null ? XmlSupport.DEFAULT_CHARSET : charset;
+
+        if( target instanceof Writer )
+        {
+            save( new StreamResult((Writer)target), effectiveCharset, declaration );
+            return;
+        }
+
+        if( target instanceof OutputStream ) {
+            save( new StreamResult((OutputStream)target), effectiveCharset, declaration );
+            return;
+        }
+
+        if( target instanceof File ) {
+            save( new StreamResult((File)target), effectiveCharset, declaration );
+            return;
+        }
+
+        if( target instanceof Path ) {
+            save( new StreamResult(((Path)target).toFile()), effectiveCharset, declaration );
+            return;
+        }
+
+        throw new XcoWriteException( "[XML] Unsupported XML target type: " + target.getClass().getName() );
+    }
+
+    /** */
+    private void save( Result result, Charset charset, boolean declaration )
+    {
+        XmlSupport.write( xco.node(), result, charset, declaration );
     }
 
     /**
@@ -241,44 +275,40 @@ public final class XcoXml implements XcoFormat {
     }
 
     /** */
-    public void validate( Reader reader ) {
-        XmlSupport.validate (
-            xco.node(),
-            new StreamSource(
-                Objects.requireNonNull( reader, "'reader' is null" )
-            )
-        );
+    public void validate( Reader xsd )
+    {
+        Objects.requireNonNull(xsd, "'xsd' is null");
+
+        validate( new StreamSource(xsd) );
     }
 
-    /** */
-    public void validate( InputStream is ) {
-        XmlSupport.validate(
-            xco.node(),
-            new StreamSource(
-                Objects.requireNonNull( is, "'is' is null" )
-            )
-        );
-    }
 
     /** */
-    public void validate( File file ) {
-        XmlSupport.validate(
-            xco.node( ),
-            new StreamSource (
-                Objects.requireNonNull( file, "'file' is null" )
-            )
-        );
+    public void validate( InputStream xsd )
+    {
+        Objects.requireNonNull(xsd, "'xsd' is null");
+
+        validate( new StreamSource(xsd) );
     }
 
+
     /** */
-    public void validate( Path path ) {
-        XmlSupport.validate (
-            xco.node( ),
-            new StreamSource(
-                Objects.requireNonNull(path, "'path' is null").toFile()
-            )
-        );
+    public void validate( File xsd )
+    {
+        Objects.requireNonNull(xsd, "'xsd' is null");
+
+        validate( new StreamSource(xsd) );
     }
+
+
+    /** */
+    public void validate( Path xsd )
+    {
+        Objects.requireNonNull(xsd, "'xsd' is null");
+
+        validate( new StreamSource(xsd.toFile()) );
+    }
+
 
     /** */
     public void validate( URL url )
@@ -292,7 +322,7 @@ public final class XcoXml implements XcoFormat {
             validate(source);
         }
         catch( Throwable th ) {
-            throw new XcoException( "[XML] Error on XSLT transform from URL: " + url, th );
+            throw new XcoException( "[XML] XSD validation failed from URL: " + url, th );
         }
     }
 

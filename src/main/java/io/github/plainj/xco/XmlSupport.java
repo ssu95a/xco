@@ -72,54 +72,26 @@ final class XmlSupport {
 
 
     /** */
-    static void write( Node node, Object target, Charset charset, boolean declaration )
+    static void write( Node node, Result result, Charset charset, boolean declaration )
     {
-        Objects.requireNonNull( node,   "'node' is null" );
-        Objects.requireNonNull( target, "'target' is null" );
-
-        Charset effectiveCharset = charset == null ? DEFAULT_CHARSET : charset;
-
-        if( target instanceof Writer ) {
-            write(node, new StreamResult((Writer)target), effectiveCharset, declaration);
-            return;
-        }
-
-        if( target instanceof OutputStream ) {
-            write(node, new StreamResult((OutputStream)target), effectiveCharset, declaration);
-            return;
-        }
-
-        if( target instanceof File ) {
-            write(node, new StreamResult((File)target), effectiveCharset, declaration);
-            return;
-        }
-
-        if( target instanceof Path ) {
-            write(node, new StreamResult(((Path)target).toFile()), effectiveCharset, declaration);
-            return;
-        }
-
-        throw new XcoWriteException( "[XML] Unsupported XML target type: " + target.getClass().getName());
-    }
-
-    /** */
-    private static void write(Node node, Result result, Charset charset, boolean declaration )
-    {
+        Objects.requireNonNull( node, "'node' is null");
+        Objects.requireNonNull( result, "'result' is null");
+        Objects.requireNonNull( charset, "'charset' is null");
 
         try {
-
             Transformer transformer = transformerFactory().newTransformer();
 
             if( !declaration )
-                transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+                transformer.setOutputProperty( OutputKeys.OMIT_XML_DECLARATION, "yes" );
 
-            transformer.setOutputProperty(OutputKeys.ENCODING, charset.name());
+            transformer.setOutputProperty( OutputKeys.ENCODING, charset.name() );
 
-            final Document ownerDocument = node instanceof Document ? (Document)node : node.getOwnerDocument();
+            Document ownerDocument = node instanceof Document ? (Document)node : node.getOwnerDocument();
 
             if( ownerDocument != null )
             {
                 DocumentType docType = ownerDocument.getDoctype();
+
                 if( docType != null )
                     transformer.setOutputProperty( OutputKeys.DOCTYPE_SYSTEM, docType.getSystemId() );
             }
@@ -130,7 +102,6 @@ final class XmlSupport {
             throw new XcoWriteException( "[XML] Error on write XML", th );
         }
     }
-
 
     /** */
     private static TransformerFactory transformerFactory() {
