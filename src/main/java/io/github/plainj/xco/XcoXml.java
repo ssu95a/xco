@@ -9,6 +9,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -17,6 +18,8 @@ import java.util.Objects;
 public final class XcoXml implements XcoFormat {
 
     private static final String STRIP_NAMESPACES_XSLT = "/io/github/plainj/xco/strip-namespaces.xsl";
+
+    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
     private final Xco xco;
 
@@ -127,7 +130,7 @@ public final class XcoXml implements XcoFormat {
     {
         Objects.requireNonNull(target, "'target' is null");
 
-        Charset effectiveCharset = charset == null ? XmlSupport.DEFAULT_CHARSET : charset;
+        Charset effectiveCharset = charset == null ? DEFAULT_CHARSET : charset;
 
         if( target instanceof Writer )
         {
@@ -322,7 +325,7 @@ public final class XcoXml implements XcoFormat {
             validate(source);
         }
         catch( Throwable th ) {
-            throw new XcoException( "[XML] XSD validation failed from URL: " + url, th );
+            throw new XcoValidationException( "[XML] XSD validation failed from URL: " + url, th );
         }
     }
 

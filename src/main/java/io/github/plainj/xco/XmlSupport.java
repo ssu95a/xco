@@ -13,19 +13,14 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.*;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Objects;
 
 final class XmlSupport {
-
-    static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
     private static final DocumentBuilderFactory DOCUMENT_BUILDER_FACTORY;
 
@@ -35,10 +30,11 @@ final class XmlSupport {
             DOCUMENT_BUILDER_FACTORY = createDocumentBuilderFactory();
         }
         catch( ParserConfigurationException ex ) {
-            throw new ExceptionInInitializerError("Failed to initialize secure XML parser: " + ex.getMessage());
+            throw new ExceptionInInitializerError( "Failed to initialize secure XML parser: " + ex.getMessage() );
         }
     }
 
+    /** */
     private XmlSupport() {
     }
 
@@ -47,11 +43,11 @@ final class XmlSupport {
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature( "http://apache.org/xml/features/disallow-doctype-decl", true );
+        factory.setFeature( "http://xml.org/sax/features/external-general-entities", false );
+        factory.setFeature( "http://xml.org/sax/features/external-parameter-entities", false );
+        factory.setFeature( "http://apache.org/xml/features/nonvalidating/load-external-dtd", false );
+        factory.setFeature( XMLConstants.FEATURE_SECURE_PROCESSING, true );
 
         factory.setXIncludeAware(false);
         factory.setExpandEntityReferences(false);
@@ -63,8 +59,8 @@ final class XmlSupport {
         catch( IllegalArgumentException ignored ) {
         }
 
-        factory.setNamespaceAware(false);
-        factory.setValidating(false);
+        factory.setNamespaceAware( true );
+        factory.setValidating    ( false);
         factory.setIgnoringComments(true);
 
         return factory;
@@ -79,6 +75,7 @@ final class XmlSupport {
         Objects.requireNonNull( charset, "'charset' is null");
 
         try {
+
             Transformer transformer = transformerFactory().newTransformer();
 
             if( !declaration )
@@ -125,6 +122,26 @@ final class XmlSupport {
         }
         catch( Exception ignored ) {
         }
+
+        factory.setErrorListener(new ErrorListener() {
+
+            @Override
+            public void warning( TransformerException ex ) throws TransformerException {
+                // ignore
+            }
+
+            @Override
+            public void error( TransformerException ex ) throws TransformerException
+            {
+                throw ex;
+            }
+
+            @Override
+            public void fatalError( TransformerException ex ) throws TransformerException
+            {
+                throw ex;
+            }
+        });
 
         return factory;
     }

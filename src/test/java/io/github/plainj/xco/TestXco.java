@@ -407,4 +407,95 @@ public class TestXco {
                 result.xml().text()
         );
     }
+
+    @Test
+    public void shouldValidateXmlAgainstXsd()
+    {
+        String xml =
+                "<user>" +
+                        "  <name>Sergey</name>" +
+                        "  <age>30</age>" +
+                        "</user>";
+
+        String xsd =
+                "<?xml version=\"1.0\"?>" +
+                        "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">" +
+                        "  <xs:element name=\"user\">" +
+                        "    <xs:complexType>" +
+                        "      <xs:sequence>" +
+                        "        <xs:element name=\"name\" type=\"xs:string\"/>" +
+                        "        <xs:element name=\"age\" type=\"xs:int\"/>" +
+                        "      </xs:sequence>" +
+                        "    </xs:complexType>" +
+                        "  </xs:element>" +
+                        "</xs:schema>";
+
+        Xco xco = XcoXml.parse(xml);
+
+        xco.xml().validate(
+                new StringReader(xsd)
+        );
+    }
+
+    @Test(expected = XcoValidationException.class)
+    public void shouldRejectXmlThatDoesNotMatchXsd()
+    {
+        String xml =
+                "<user>" +
+                        "  <name>Sergey</name>" +
+                        "  <age>not-a-number</age>" +
+                        "</user>";
+
+        String xsd =
+                "<?xml version=\"1.0\"?>" +
+                        "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">" +
+                        "  <xs:element name=\"user\">" +
+                        "    <xs:complexType>" +
+                        "      <xs:sequence>" +
+                        "        <xs:element name=\"name\" type=\"xs:string\"/>" +
+                        "        <xs:element name=\"age\" type=\"xs:int\"/>" +
+                        "      </xs:sequence>" +
+                        "    </xs:complexType>" +
+                        "  </xs:element>" +
+                        "</xs:schema>";
+
+        Xco xco = XcoXml.parse(xml);
+
+        xco.xml().validate(
+                new StringReader(xsd)
+        );
+    }
+
+    @Test
+    public void shouldValidateNamespacedXmlAgainstXsd()
+    {
+        String xml =
+                "<t:user xmlns:t=\"urn:test\">" +
+                        "  <t:name>Sergey</t:name>" +
+                        "</t:user>";
+
+        String xsd =
+                "<?xml version=\"1.0\"?>" +
+                        "<xs:schema " +
+                        "xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" " +
+                        "xmlns:t=\"urn:test\" " +
+                        "targetNamespace=\"urn:test\" " +
+                        "elementFormDefault=\"qualified\">" +
+
+                        "  <xs:element name=\"user\">" +
+                        "    <xs:complexType>" +
+                        "      <xs:sequence>" +
+                        "        <xs:element name=\"name\" type=\"xs:string\"/>" +
+                        "      </xs:sequence>" +
+                        "    </xs:complexType>" +
+                        "  </xs:element>" +
+
+                        "</xs:schema>";
+
+        Xco xco = XcoXml.parse(xml);
+
+        xco.xml().validate(
+                new StringReader(xsd)
+        );
+    }
 }
