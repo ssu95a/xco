@@ -5,7 +5,6 @@ import org.w3c.dom.DocumentType;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -19,10 +18,8 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.*;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -134,6 +131,8 @@ final class XmlSupport {
         }
     }
 
+
+    /** */
     private static TransformerFactory transformerFactory() {
 
         TransformerFactory factory = TransformerFactory.newInstance();
@@ -159,114 +158,35 @@ final class XmlSupport {
         return factory;
     }
 
-    /** */
-    static Element read(Object source, Charset charset) {
 
+    /** */
+    static Element read( InputSource source )
+    {
         Objects.requireNonNull(source, "'source' is null");
 
         try {
 
-            if( source instanceof CharSequence )
-                return read(new InputSource(new StringReader(source.toString())));
+            Document document = documentBuilder().parse(source);
 
-            if( source instanceof Reader )
-                return read(readerInputSource((Reader)source, charset));
+            if( document == null || document.getDocumentElement() == null )
+                throw new XcoReadException( "[XML] Parsed XML document is empty" );
 
-            if( source instanceof InputStream )
-                return read(streamInputSource((InputStream)source, charset));
+            document.normalize();
 
-            if( source instanceof File )
-                return read((File)source, charset);
+            Element root = document.getDocumentElement();
 
-            if( source instanceof Path )
-                return read((Path)source, charset);
+            removeBlankTextNodes(root);
 
-            if( source instanceof URL )
-                return read((URL)source, charset);
-
-            throw new XcoReadException( "Unsupported XML source type: " + source.getClass().getName() );
+            return root;
         }
         catch( XcoReadException ex ) {
             throw ex;
         }
         catch( Throwable th ) {
-            throw new XcoReadException( "[XML] Error on read XML from " + source, th );
+            throw new XcoReadException("[XML] Error on parse XML", th );
         }
     }
 
-    private static Element read(File file, Charset charset) {
-
-        Objects.requireNonNull(file, "'file' is null");
-
-        try( InputStream is = Files.newInputStream(file.toPath()) ) {
-            return read(streamInputSource(is, charset));
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException(
-                    "[XML] Error on read XML from file" + file, th );
-        }
-    }
-
-    private static Element read(Path path, Charset charset) {
-
-        Objects.requireNonNull(path, "'path' is null");
-
-        try( InputStream is = Files.newInputStream(path) ) {
-            return read(streamInputSource(is, charset));
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException("[XML] Error on read XML from path: " + path, th);
-        }
-    }
-
-    private static Element read(URL url, Charset charset) {
-
-        Objects.requireNonNull( url, "'url' is null" );
-
-        try( InputStream is = url.openStream() ) {
-             return read( streamInputSource( is, charset) );
-        }
-        catch( Throwable th ) {
-            throw new XcoReadException("[XML] Error on read XML from URL: " + url, th);
-        }
-    }
-
-    private static Element read(InputSource source) throws IOException, SAXException {
-
-        org.w3c.dom.Document document = documentBuilder().parse(source);
-
-        if( document == null || document.getDocumentElement() == null )
-            throw new XcoReadException("Parsed XML document is empty");
-
-        document.normalize();
-
-        Element root = document.getDocumentElement();
-
-        removeBlankTextNodes(root);
-
-        return root;
-    }
-
-    private static InputSource readerInputSource(Reader reader, Charset charset) {
-
-        InputSource source = new InputSource(reader);
-
-        if( charset != null )
-            source.setEncoding(charset.name());
-
-        return source;
-    }
-
-    /** */
-    private static InputSource streamInputSource( InputStream stream, Charset charset ) {
-
-        InputSource source = new InputSource(stream);
-
-        if( charset != null )
-            source.setEncoding(charset.name());
-
-        return source;
-    }
 
     /** */
     private static DocumentBuilder documentBuilder() {
@@ -280,7 +200,8 @@ final class XmlSupport {
     }
 
 
-    static void removeBlankTextNodes(Node node) {
+    /** */
+    static void removeBlankTextNodes( Node node ) {
 
         for( Node child = node.getFirstChild(); child != null; ) {
 
@@ -334,6 +255,9 @@ final class XmlSupport {
         try {
 
             SchemaFactory factory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
+            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+
             Schema schema = factory.newSchema(xsd);
 
             Validator validator = schema.newValidator();

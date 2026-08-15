@@ -1,13 +1,13 @@
 package io.github.plainj.xco;
 
+import org.xml.sax.InputSource;
+
 import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
-import java.io.File;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
@@ -28,17 +28,80 @@ public final class XcoXml implements XcoFormat {
     /**
      *
      */
-    public static Xco parse(Object source) {
-        return Xco.wrap(XmlSupport.read(source, null));
+    public static Xco parse( Reader reader )
+    {
+        Objects.requireNonNull(reader, "'reader' is null");
+        return Xco.wrap( XmlSupport.read( new InputSource(reader) ) );
     }
 
     /**
      *
      */
-    public static Xco parse( Object source, Charset charset ) {
-        return Xco.wrap( XmlSupport.read(source, charset) );
+    public static Xco parse( String xml )
+    {
+        Objects.requireNonNull(xml, "'xml' is null");
+        return parse( new StringReader(xml) );
     }
 
+    /**
+     *
+     */
+    public static Xco parse( Path path )
+    {
+        Objects.requireNonNull(path, "'path' is null");
+
+        try( InputStream stream = Files.newInputStream(path) ) {
+             return parse(stream);
+        }
+        catch( Throwable th ) {
+            throw new XcoReadException( "[XML] Error on read XML from path: " + path, th);
+        }
+    }
+
+    /** */
+    public static Xco parse( InputStream stream )
+    {
+        return parse(stream, null);
+    }
+
+    /** */
+    public static Xco parse( InputStream stream, Charset charset )
+    {
+        Objects.requireNonNull(stream, "'stream' is null");
+
+        InputSource source = new InputSource(stream);
+
+        if( charset != null )
+            source.setEncoding(charset.name());
+
+        return Xco.wrap( XmlSupport.read(source) );
+    }
+
+    /** */
+    public static Xco parse( File file )
+    {
+        Objects.requireNonNull(file, "'file' is null");
+
+        try( InputStream stream = Files.newInputStream(file.toPath()) ) {
+            return parse(stream);
+        }
+        catch( Throwable th ) {
+            throw new XcoReadException( "[XML] Error on read XML from file: " + file, th );
+        }
+    }
+
+    /** */
+    public static Xco parse( URL url )
+    {
+        Objects.requireNonNull(url, "'url' is null");
+
+        try( InputStream stream = url.openStream() ) {
+            return parse(stream);
+        }
+        catch( Throwable th ) {
+            throw new XcoReadException( "[XML] Error on read XML from URL: " + url, th );
+        }
+    }
     /**
      *
      */
@@ -173,13 +236,64 @@ public final class XcoXml implements XcoFormat {
 
     /** */
     public void validate( Source xsd ) {
+        Objects.requireNonNull(xsd, "'xsd' is null");
         XmlSupport.validate( xco.node(), xsd );
     }
 
-//    /** */
-//    validate(Reader)
-//    validate(InputStream)
-//    validate(File)
-//    validate(Path)
-//    validate(URL)
+    /** */
+    public void validate( Reader reader ) {
+        XmlSupport.validate (
+            xco.node(),
+            new StreamSource(
+                Objects.requireNonNull( reader, "'reader' is null" )
+            )
+        );
+    }
+
+    /** */
+    public void validate( InputStream is ) {
+        XmlSupport.validate(
+            xco.node(),
+            new StreamSource(
+                Objects.requireNonNull( is, "'is' is null" )
+            )
+        );
+    }
+
+    /** */
+    public void validate( File file ) {
+        XmlSupport.validate(
+            xco.node( ),
+            new StreamSource (
+                Objects.requireNonNull( file, "'file' is null" )
+            )
+        );
+    }
+
+    /** */
+    public void validate( Path path ) {
+        XmlSupport.validate (
+            xco.node( ),
+            new StreamSource(
+                Objects.requireNonNull(path, "'path' is null").toFile()
+            )
+        );
+    }
+
+    /** */
+    public void validate( URL url )
+    {
+        Objects.requireNonNull( url, "'url' is null");
+
+        try( InputStream stream = url.openStream() )
+        {
+            StreamSource source = new StreamSource(stream);
+            source.setSystemId(url.toExternalForm());
+            validate(source);
+        }
+        catch( Throwable th ) {
+            throw new XcoException( "[XML] Error on XSLT transform from URL: " + url, th );
+        }
+    }
+
 }
