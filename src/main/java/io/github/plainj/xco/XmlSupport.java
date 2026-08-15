@@ -11,12 +11,13 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Result;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -43,6 +44,35 @@ final class XmlSupport {
 
     private XmlSupport() {
     }
+
+    /** */
+    private static DocumentBuilderFactory createDocumentBuilderFactory() throws ParserConfigurationException {
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        try {
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        }
+        catch( IllegalArgumentException ignored ) {
+        }
+
+        factory.setNamespaceAware(false);
+        factory.setValidating(false);
+        factory.setIgnoringComments(true);
+
+        return factory;
+    }
+
 
     /** */
     static void write( Node node, Object target, Charset charset, boolean declaration )
@@ -75,6 +105,7 @@ final class XmlSupport {
         throw new XcoWriteException( "[XML] Unsupported XML target type: " + target.getClass().getName());
     }
 
+    /** */
     private static void write(Node node, Result result, Charset charset, boolean declaration )
     {
 
@@ -190,13 +221,13 @@ final class XmlSupport {
 
     private static Element read(URL url, Charset charset) {
 
-        Objects.requireNonNull(url, "'url' is null");
+        Objects.requireNonNull( url, "'url' is null" );
 
         try( InputStream is = url.openStream() ) {
-            return read(streamInputSource(is, charset));
+             return read( streamInputSource( is, charset) );
         }
         catch( Throwable th ) {
-            throw new XcoReadException("[XML] Error on read XML from url: " + url, th);
+            throw new XcoReadException("[XML] Error on read XML from URL: " + url, th);
         }
     }
 
@@ -227,7 +258,7 @@ final class XmlSupport {
     }
 
     /** */
-    private static InputSource streamInputSource(InputStream stream, Charset charset) {
+    private static InputSource streamInputSource( InputStream stream, Charset charset ) {
 
         InputSource source = new InputSource(stream);
 
@@ -248,32 +279,6 @@ final class XmlSupport {
         }
     }
 
-    private static DocumentBuilderFactory createDocumentBuilderFactory() throws ParserConfigurationException {
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-
-        factory.setXIncludeAware(false);
-        factory.setExpandEntityReferences(false);
-
-        try {
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-        }
-        catch( IllegalArgumentException ignored ) {
-        }
-
-        factory.setNamespaceAware(false);
-        factory.setValidating(false);
-        factory.setIgnoringComments(true);
-
-        return factory;
-    }
 
     static void removeBlankTextNodes(Node node) {
 
@@ -287,6 +292,55 @@ final class XmlSupport {
                 removeBlankTextNodes(child);
 
             child = next;
+        }
+    }
+
+    /** */
+    static Element transform( Node node, Source xslt )
+    {
+        Objects.requireNonNull( node, "'node' is null" );
+        Objects.requireNonNull( xslt, "'xslt' is null" );
+
+        try {
+
+            Transformer transformer = transformerFactory().newTransformer(xslt);
+
+            DOMResult result = new DOMResult();
+
+            transformer.transform( new DOMSource(node), result );
+
+            Node resultNode = result.getNode();
+
+            if( resultNode instanceof Document )
+            {
+                Element root = ((Document)resultNode).getDocumentElement();
+                if( root != null )
+                    return root;
+            }
+
+            if( resultNode instanceof Element )
+                return (Element)resultNode;
+
+            throw new XcoException( "[XML] XSLT result has no root element" );
+        }
+        catch( Throwable th ) {
+            throw new XcoException( "[XML] Error on XSLT transform", th );
+        }
+    }
+
+    /** */
+    static void validate( Node node, Source xsd )
+    {
+        try {
+
+            SchemaFactory factory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
+            Schema schema = factory.newSchema(xsd);
+
+            Validator validator = schema.newValidator();
+            validator.validate( new DOMSource(node) );
+        }
+        catch (Throwable th) {
+            throw new XcoValidationException( "[XML] XSD validation failed", th );
         }
     }
 

@@ -2,6 +2,7 @@ package io.github.plainj.xco;
 
 import org.junit.Test;
 
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -319,5 +320,91 @@ public class TestXco {
         String json = xco.json().text(true);
 
         assertTrue(json.contains("\n"));
+    }
+
+    @Test
+    public void shouldTransformXmlWithXslt()
+    {
+        Xco xco = XcoXml.parse(
+                "<user><name>Sergey</name></user>"
+        );
+
+        String xslt =
+                "<?xml version=\"1.0\"?>" +
+                        "<xsl:stylesheet version=\"1.0\" " +
+                        "xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">" +
+                        "  <xsl:template match=\"/\">" +
+                        "    <person>" +
+                        "      <fullName>" +
+                        "        <xsl:value-of select=\"user/name\"/>" +
+                        "      </fullName>" +
+                        "    </person>" +
+                        "  </xsl:template>" +
+                        "</xsl:stylesheet>";
+
+        Xco result = xco.xml().transform(
+                new StringReader(xslt)
+        );
+
+        assertEquals(
+                "<person><fullName>Sergey</fullName></person>",
+                result.xml().text()
+        );
+    }
+
+    @Test(expected = XcoException.class)
+    public void shouldRejectInvalidXslt()
+    {
+        Xco.of("root")
+                .xml()
+                .transform(
+                        new StringReader("<invalid>")
+                );
+    }
+
+    @Test
+    public void shouldTransformAttributes()
+    {
+        Xco xco = XcoXml.parse(
+                "<user id=\"100\"/>"
+        );
+
+        // XSLT: @id -> <id>100</id>
+    }
+
+    @Test
+    public void shouldCopyWithoutNamespaces()
+    {
+        Xco source = XcoXml.parse(
+                "<ns:user xmlns:ns=\"urn:test\" ns:id=\"100\">" +
+                        "<ns:name>Sergey</ns:name>" +
+                        "</ns:user>"
+        );
+
+        Xco result = source.xml().copyWithoutNamespaces();
+
+        assertEquals(
+                "<user id=\"100\"><name>Sergey</name></user>",
+                result.xml().text()
+        );
+
+        assertTrue(
+                source.xml().text().contains("ns:user")
+        );
+    }
+
+    @Test
+    public void shouldCopyWithoutDefaultNamespaces()
+    {
+        Xco source = XcoXml.parse (
+            "<user xmlns=\"urn:test\"><name>Sergey</name></user>"
+        );
+
+        Xco result = source.xml().copyWithoutNamespaces();
+
+        assertEquals(
+                "<user><name>Sergey</name></user>",
+                result.xml().text()
+        );
     }
 }
