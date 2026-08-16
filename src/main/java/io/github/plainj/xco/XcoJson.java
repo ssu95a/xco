@@ -42,7 +42,6 @@ public final class XcoJson implements XcoFormat {
      */
     private static JsonValue readJsonValue(InputStream stream) {
         Objects.requireNonNull(stream, "'stream' is null");
-
         try {
             JsonReader jsonReader = Json.createReader(stream);
             return jsonReader.readValue();
@@ -93,7 +92,7 @@ public final class XcoJson implements XcoFormat {
 
     /** */
     public static Xco parse( byte[] bytes ) {
-        return parse(new ByteArrayInputStream(bytes));
+        return parse(null,bytes);
     }
     /** */
     public static Xco parse( String rootName, byte[] bytes ) {
@@ -119,6 +118,7 @@ public final class XcoJson implements XcoFormat {
         }
     }
 
+
     /** */
     public static Xco parse( Path path ) {
         return parse( null, path );
@@ -129,12 +129,13 @@ public final class XcoJson implements XcoFormat {
         Objects.requireNonNull( path, "'path' is null" );
 
         try( InputStream stream = Files.newInputStream(path) ) {
-            return parse(stream);
+            return parse(rootName, stream);
         }
         catch( Throwable th ) {
             throw new XcoReadException( "[JSON] Error on read JSON from path: " + path, th );
         }
     }
+
 
     /** */
     public static Xco parse( URL url ) {
@@ -146,7 +147,7 @@ public final class XcoJson implements XcoFormat {
         Objects.requireNonNull(url, "'url' is null");
 
         try( InputStream stream = url.openStream() ) {
-            return parse(stream);
+            return parse(rootName, stream);
         }
         catch( Throwable th ) {
             throw new XcoReadException( "[JSON] Error on read JSON from URL: " + url, th );
